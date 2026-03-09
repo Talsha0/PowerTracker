@@ -20,7 +20,7 @@ export default function DashboardPage() {
   const { user, isLoading } = useAuth()
   const { weeklyGoals } = useAuthStore()
 
-  const { data: analytics, isLoading: workoutsLoading } = useQuery({
+  const { data: analytics, isLoading: workoutsLoading, error: analyticsError } = useQuery({
     queryKey: ['analytics', user?.id],
     queryFn: () => getUserAnalytics(user!.id),
     enabled: !!user,
@@ -33,6 +33,12 @@ export default function DashboardPage() {
   })
 
   if (isLoading) return <PageLoader label={TEXT.app.loading} />
+  if (analyticsError) return (
+    <div className="page-container pt-8 text-right">
+      <p className="text-red-400 font-bold mb-2">שגיאה בטעינת נתונים</p>
+      <p className="text-gray-400 text-sm break-all">{String(analyticsError)}</p>
+    </div>
+  )
 
   const greeting = new Date().getHours() < 12 ? 'בוקר טוב' :
     new Date().getHours() < 17 ? 'צהריים טובים' : 'ערב טוב'

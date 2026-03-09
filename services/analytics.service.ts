@@ -5,13 +5,14 @@ import { calculatePace } from '@/utils/pace'
 const supabase = () => getSupabaseClient()
 
 export async function getUserAnalytics(userId: string): Promise<Analytics> {
-  const { data: workouts } = await supabase()
+  const { data: workouts, error } = await supabase()
     .from('workouts')
     .select('*')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
     .limit(200)
 
+  if (error) throw error
   const all = workouts ?? []
 
   const weekAgo = new Date()
