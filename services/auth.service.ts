@@ -49,24 +49,43 @@ export async function getCurrentUser(): Promise<User | null> {
   const { data: { session } } = await supabase().auth.getSession()
   const user = session?.user
   if (!user) return null
+  return getUserById(user.id, user)
+}
 
+// Fetch the public users row by ID, optionally using a known auth user for fallback row creation.
+// Accepts the auth user object so callers can avoid a second getSession() round-trip.
+export async function getUserById(
+  userId: string,
+  authUser?: { email?: string; user_metadata?: Record<string, unknown> }
+): Promise<User | null> {
   const { data } = await supabase()
     .from('users')
     .select('*')
-    .eq('id', user.id)
+    .eq('id', userId)
     .single()
 
   if (data) return data
 
-  // Row missing in users table (e.g. signUp insert failed) — create it now
+  // Row missing — create it using authUser data if available, otherwise re-fetch
+  let resolvedEmail = authUser?.email
+  let resolvedMeta = authUser?.user_metadata
+
+  if (!resolvedEmail) {
+    const { data: { user } } = await supabase().auth.getUser()
+    resolvedEmail = user?.email
+    resolvedMeta = user?.user_metadata
+  }
+
+  if (!resolvedEmail) return null
+
   const fallbackUsername =
-    (user.user_metadata?.username as string | undefined) ??
-    user.email?.split('@')[0] ??
+    (resolvedMeta?.username as string | undefined) ??
+    resolvedEmail.split('@')[0] ??
     'user'
 
   const { data: created } = await supabase()
     .from('users')
-    .insert({ id: user.id, email: user.email!, username: fallbackUsername })
+    .insert({ id: userId, email: resolvedEmail, username: fallbackUsername })
     .select()
     .single()
 

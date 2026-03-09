@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { getSupabaseClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/store/authStore'
-import { getCurrentUser } from '@/services/auth.service'
+import { getUserById } from '@/services/auth.service'
 
 export function useAuth() {
   const { user, isLoading, setUser, setLoading } = useAuthStore()
@@ -17,6 +17,8 @@ export function useAuth() {
       if (event === 'INITIAL_SESSION') {
         // Fires once after the client reads from storage — the only reliable
         // place to check the session on a fresh page load / refresh.
+        // Use session.user directly — avoids a second getSession() call that
+        // can return null if cookies haven't fully hydrated yet.
         if (!session?.user) {
           setUser(null)
           setLoading(false)
@@ -25,7 +27,7 @@ export function useAuth() {
         const hasCachedUser = !!useAuthStore.getState().user
         if (!hasCachedUser) setLoading(true)
         try {
-          const currentUser = await getCurrentUser()
+          const currentUser = await getUserById(session.user.id, session.user as any)
           setUser(currentUser)
         } catch {
           // Keep the cached user on error — don't wipe it
@@ -34,8 +36,9 @@ export function useAuth() {
         }
 
       } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        if (!session?.user) return
         try {
-          const currentUser = await getCurrentUser()
+          const currentUser = await getUserById(session.user.id, session.user as any)
           if (currentUser) setUser(currentUser)
         } catch { /* silent */ }
 
