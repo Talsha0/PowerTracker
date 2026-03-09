@@ -47,10 +47,11 @@ export default function RegisterPage() {
       router.push('/dashboard')
     } catch (err: any) {
       const msg = err?.message ?? ''
-      if (msg.includes('already registered')) {
+      console.error('signUp error:', err)
+      if (msg.includes('already registered') || msg.includes('already been registered')) {
         setError(TEXT.auth.emailTaken)
       } else {
-        setError(TEXT.auth.registerError)
+        setError(msg || TEXT.auth.registerError)
       }
     }
   }
