@@ -14,7 +14,9 @@ export function useAuth() {
     const supabase = getSupabaseClient()
 
     const loadUser = async () => {
-      setLoading(true)
+      // If we already have a cached user, refresh silently in the background
+      // without triggering the loading spinner (prevents flash on tab switches)
+      if (!useAuthStore.getState().user) setLoading(true)
       try {
         const currentUser = await getCurrentUser()
         setUser(currentUser)
