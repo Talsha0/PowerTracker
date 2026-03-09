@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { UserCircle2, Camera, LogOut, Target, CheckCircle2 } from 'lucide-react'
 import Image from 'next/image'
@@ -19,22 +19,37 @@ export default function ProfilePage() {
   const { weeklyGoals, setWeeklyGoals, setUser } = useAuthStore()
   const queryClient = useQueryClient()
 
-  const [username, setUsername] = useState(user?.username ?? '')
+  const [username, setUsername] = useState('')
   const [goalWorkouts, setGoalWorkouts] = useState(weeklyGoals.workoutsPerWeek?.toString() ?? '')
   const [goalDistance, setGoalDistance] = useState(weeklyGoals.runningDistanceKm?.toString() ?? '')
   const [goalGym, setGoalGym] = useState(weeklyGoals.gymSessionsPerWeek?.toString() ?? '')
   const [savedGoals, setSavedGoals] = useState(false)
 
+  // Sync username when user loads (useState initial value only runs once)
+  useEffect(() => {
+    if (user?.username) setUsername(user.username)
+  }, [user?.username])
+
   const { mutate: updateUser, isPending: updatingProfile } = useMutation({
-    mutationFn: () => updateProfile(user!.id, { username }),
+    mutationFn: () => {
+      if (!user) throw new Error('Not logged in')
+      return updateProfile(user.id, { username })
+    },
     onSuccess: (updated) => {
       setUser(updated)
       queryClient.invalidateQueries({ queryKey: ['user'] })
+    },
+    onError: (err) => {
+      alert(`שגיאה בשמירה: ${err instanceof Error ? err.message : 'נסה שוב'}`)
     },
   })
 
   const { mutate: logout } = useMutation({
     mutationFn: signOut,
+    onError: () => {
+      // Force client-side cleanup even if signOut fails
+      setUser(null)
+    },
   })
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -107,6 +122,7 @@ export default function ProfilePage() {
               fullWidth
               onClick={() => updateUser()}
               loading={updatingProfile}
+              disabled={!user || !username.trim()}
               variant="secondary"
             >
               {TEXT.app.save}

@@ -15,9 +15,14 @@ export function useAuth() {
 
     const loadUser = async () => {
       setLoading(true)
-      const currentUser = await getCurrentUser()
-      setUser(currentUser)
-      setLoading(false)
+      try {
+        const currentUser = await getCurrentUser()
+        setUser(currentUser)
+      } catch {
+        setUser(null)
+      } finally {
+        setLoading(false)
+      }
     }
 
     loadUser()

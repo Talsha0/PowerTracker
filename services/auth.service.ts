@@ -47,7 +47,21 @@ export async function getCurrentUser(): Promise<User | null> {
     .eq('id', user.id)
     .single()
 
-  return data ?? null
+  if (data) return data
+
+  // Row missing in users table (e.g. signUp insert failed) — create it now
+  const fallbackUsername =
+    (user.user_metadata?.username as string | undefined) ??
+    user.email?.split('@')[0] ??
+    'user'
+
+  const { data: created } = await supabase()
+    .from('users')
+    .insert({ id: user.id, email: user.email!, username: fallbackUsername })
+    .select()
+    .single()
+
+  return created ?? null
 }
 
 export async function updateProfile(

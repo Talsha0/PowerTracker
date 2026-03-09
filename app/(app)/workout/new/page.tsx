@@ -13,6 +13,8 @@ import {
   deleteDraft,
   getCustomWorkoutTypes,
   createCustomWorkoutType,
+  addExerciseToWorkout,
+  addSet as addSetToDb,
 } from '@/services/workout.service'
 import { TEXT } from '@/constants/text'
 import { Header } from '@/components/layout/Header'
@@ -109,7 +111,8 @@ function NewWorkoutPage() {
 
   const { mutate: save, isPending: saving } = useMutation({
     mutationFn: async () => {
-      if (!user || !draft) throw new Error()
+      if (!user) throw new Error('לא מחובר')
+      if (!draft) throw new Error('אין נתוני אימון')
 
       const calories = calculateCalories({
         type: draft.type,
@@ -129,6 +132,21 @@ function NewWorkoutPage() {
         gym_category: draft.gym_category ?? null,
       })
 
+      // Save exercises and sets for gym workouts
+      if (draft.type === 'gym' && draft.exercises?.length) {
+        for (let i = 0; i < draft.exercises.length; i++) {
+          const draftEx = draft.exercises[i]
+          if (!draftEx.exerciseId) continue
+
+          const workoutExercise = await addExerciseToWorkout(workout.id, draftEx.exerciseId, i + 1)
+
+          for (let j = 0; j < draftEx.sets.length; j++) {
+            const s = draftEx.sets[j]
+            await addSetToDb(workoutExercise.id, j + 1, s.weight, s.repetitions)
+          }
+        }
+      }
+
       await deleteDraft(user.id)
       clearDraft()
       return workout
@@ -138,6 +156,9 @@ function NewWorkoutPage() {
       queryClient.invalidateQueries({ queryKey: ['analytics'] })
       queryClient.invalidateQueries({ queryKey: ['draft'] })
       router.push(`/workout/${workout.id}`)
+    },
+    onError: (err) => {
+      alert(`שגיאה בשמירת האימון: ${err instanceof Error ? err.message : 'נסה שוב'}`)
     },
   })
 
