@@ -13,27 +13,32 @@ export function useAuth() {
   useEffect(() => {
     const supabase = getSupabaseClient()
 
-    const loadUser = async () => {
-      // Only show the spinner when there is no cached user at all.
-      // With a persisted user, refresh happens silently in the background.
-      const hasCachedUser = !!useAuthStore.getState().user
-      if (!hasCachedUser) setLoading(true)
-      try {
-        const currentUser = await getCurrentUser()
-        setUser(currentUser)
-      } catch {
-        setUser(null)
-      } finally {
-        if (!hasCachedUser) setLoading(false)
-      }
-    }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'INITIAL_SESSION') {
+        // Fires once after the client reads from storage — the only reliable
+        // place to check the session on a fresh page load / refresh.
+        if (!session?.user) {
+          setUser(null)
+          setLoading(false)
+          return
+        }
+        const hasCachedUser = !!useAuthStore.getState().user
+        if (!hasCachedUser) setLoading(true)
+        try {
+          const currentUser = await getCurrentUser()
+          setUser(currentUser)
+        } catch {
+          // Keep the cached user on error — don't wipe it
+        } finally {
+          setLoading(false)
+        }
 
-    loadUser()
+      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        try {
+          const currentUser = await getCurrentUser()
+          if (currentUser) setUser(currentUser)
+        } catch { /* silent */ }
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
-      if (event === 'SIGNED_IN') {
-        const currentUser = await getCurrentUser()
-        setUser(currentUser)
       } else if (event === 'SIGNED_OUT') {
         setUser(null)
         router.push('/login')
