@@ -38,7 +38,10 @@ export async function signOut() {
 }
 
 export async function getCurrentUser(): Promise<User | null> {
-  const { data: { user } } = await supabase().auth.getUser()
+  // getSession() reads from localStorage — no extra network call when token is valid.
+  // getUser() always hits the Auth server, causing slow/infinite loading on refresh.
+  const { data: { session } } = await supabase().auth.getSession()
+  const user = session?.user
   if (!user) return null
 
   const { data } = await supabase()
