@@ -10,6 +10,7 @@ export async function getUserAnalytics(userId: string): Promise<Analytics> {
     .select('*')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
+    .limit(200)
 
   const all = workouts ?? []
 

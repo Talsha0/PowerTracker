@@ -1,12 +1,11 @@
 'use client'
 
-import { useEffect } from 'react'
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
-import { Plus, Trophy, Calendar } from 'lucide-react'
+import { Trophy, Calendar } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useAuth } from '@/hooks/useAuth'
-import { getUserWorkouts, getDraft } from '@/services/workout.service'
+import { getDraft } from '@/services/workout.service'
 import { getUserAnalytics } from '@/services/analytics.service'
 import { TEXT } from '@/constants/text'
 import { Button } from '@/components/ui/Button'
@@ -21,13 +20,7 @@ export default function DashboardPage() {
   const { user, isLoading } = useAuth()
   const { weeklyGoals } = useAuthStore()
 
-  const { data: workouts = [], isLoading: workoutsLoading } = useQuery({
-    queryKey: ['workouts', user?.id],
-    queryFn: () => getUserWorkouts(user!.id),
-    enabled: !!user,
-  })
-
-  const { data: analytics } = useQuery({
+  const { data: analytics, isLoading: workoutsLoading } = useQuery({
     queryKey: ['analytics', user?.id],
     queryFn: () => getUserAnalytics(user!.id),
     enabled: !!user,
@@ -119,7 +112,7 @@ export default function DashboardPage() {
 
       {/* AI Coach */}
       <div className="mb-4">
-        <CoachWidget workouts={workouts} streak={analytics?.streak ?? 0} />
+        <CoachWidget workouts={analytics?.recentWorkouts ?? []} streak={analytics?.streak ?? 0} />
       </div>
 
       {/* Recent Workouts */}
@@ -135,7 +128,7 @@ export default function DashboardPage() {
           <div className="space-y-3">
             {[1, 2, 3].map((i) => <WorkoutCardSkeleton key={i} />)}
           </div>
-        ) : workouts.length === 0 ? (
+        ) : !analytics?.recentWorkouts?.length ? (
           <Card className="text-center py-10">
             <p className="text-4xl mb-3">🏋️</p>
             <p className="text-gray-400 mb-4">{TEXT.dashboard.noWorkouts}</p>
@@ -145,7 +138,7 @@ export default function DashboardPage() {
           </Card>
         ) : (
           <div className="space-y-3">
-            {workouts.slice(0, 5).map((w) => (
+            {(analytics?.recentWorkouts ?? []).slice(0, 5).map((w) => (
               <WorkoutCard key={w.id} workout={w} />
             ))}
           </div>
