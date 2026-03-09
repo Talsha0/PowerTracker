@@ -1,44 +1,33 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 
 export async function GET() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
   const results: Record<string, unknown> = {
-    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'MISSING',
-    anonKeyFormat: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.startsWith('eyJ')
-      ? 'valid JWT'
-      : 'INVALID — must start with eyJ',
+    supabaseUrl: url ?? 'MISSING',
+    anonKeyFormat: key?.startsWith('eyJ') ? 'valid JWT' : `INVALID (starts with: ${key?.slice(0, 15)})`,
   }
 
-  try {
-    const supabase = await createClient()
+  if (!url || !key) {
+    return NextResponse.json({ ...results, fatal: 'Missing env vars' })
+  }
 
-    // Ping
+  const supabase = createClient(url, key)
+
+  const tables = ['users', 'workouts', 'workout_drafts', 'exercise_library', 'custom_workout_types']
+  const tableResults: Record<string, string> = {}
+
+  for (const table of tables) {
     const t0 = Date.now()
-    const { error: pingError } = await supabase
-      .from('workouts')
-      .select('*', { count: 'exact', head: true })
-    results.pingMs = Date.now() - t0
-    results.pingError = pingError?.message ?? null
-
-    // Check each table exists and is readable
-    const tables = ['users', 'workouts', 'workout_drafts', 'exercise_library']
-    const tableResults: Record<string, string> = {}
-    for (const table of tables) {
-      const { error } = await supabase.from(table).select('*', { count: 'exact', head: true })
-      tableResults[table] = error ? `ERROR: ${error.message} (${error.code})` : 'ok'
-    }
-    results.tables = tableResults
-
-    // Check auth trigger exists
-    const { data: trigger } = await supabase
-      .rpc('pg_catalog.pg_trigger' as any)
-      .limit(1)
-      .maybeSingle()
-    results.triggerCheck = 'run SELECT * FROM pg_trigger WHERE tgname = \'on_auth_user_created\' in SQL editor to verify'
-
-  } catch (err) {
-    results.fatalError = String(err)
+    const { error } = await supabase.from(table).select('*', { count: 'exact', head: true })
+    const ms = Date.now() - t0
+    tableResults[table] = error
+      ? `ERROR ${error.code}: ${error.message}`
+      : `ok (${ms}ms)`
   }
 
-  return NextResponse.json(results, { status: 200 })
+  results.tables = tableResults
+  return NextResponse.json(results)
 }
