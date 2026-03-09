@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { signUp } from '@/services/auth.service'
+import { signUp, getCurrentUser } from '@/services/auth.service'
+import { useAuthStore } from '@/store/authStore'
 import { TEXT } from '@/constants/text'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -27,6 +28,7 @@ type FormData = z.infer<typeof schema>
 
 export default function RegisterPage() {
   const router = useRouter()
+  const { setUser } = useAuthStore()
   const [error, setError] = useState('')
 
   const {
@@ -39,8 +41,10 @@ export default function RegisterPage() {
     setError('')
     try {
       await signUp(data.email, data.password, data.username)
+      // Load user into store immediately so dashboard doesn't open with user=null
+      const user = await getCurrentUser()
+      setUser(user)
       router.push('/dashboard')
-      router.refresh()
     } catch (err: any) {
       const msg = err?.message ?? ''
       if (msg.includes('already registered')) {

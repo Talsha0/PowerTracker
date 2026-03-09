@@ -15,12 +15,18 @@ export async function signUp(email: string, password: string, username: string) 
   if (error) throw error
 
   if (data.user) {
-    // Insert into public users table
-    await supabase().from('users').insert({
+    // Insert into public users table.
+    // The on_auth_user_created trigger also does this — the ON CONFLICT
+    // clause means whichever runs first wins and the second is a no-op.
+    const { error: insertError } = await supabase().from('users').insert({
       id: data.user.id,
       email,
       username,
     })
+    if (insertError && insertError.code !== '23505') {
+      // 23505 = unique_violation (row already created by trigger) — ignore it
+      console.error('users insert error:', insertError)
+    }
   }
 
   return data
