@@ -15,7 +15,6 @@
     "@supabase/supabase-js": "^2.44.4",
     "@tanstack/react-query": "^5.51.21",
     "@tanstack/react-query-devtools": "^5.51.21",
-    "canvas": "^3.2.1",
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
     "idb": "^8.0.0",
@@ -30,6 +29,7 @@
     "zustand": "^4.5.4"
   },
   "devDependencies": {
+    "canvas": "^3.2.1",
     "@types/node": "^20.14.11",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",

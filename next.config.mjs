@@ -19,6 +19,22 @@ const nextConfig = {
       ],
     },
   ],
+  // Prevent Node.js-only packages from being bundled into the Edge Runtime
+  serverExternalPackages: ['canvas'],
+  webpack: (config, { nextRuntime }) => {
+    if (nextRuntime === 'edge') {
+      // The `ws` package (used by @supabase/realtime-js) uses __dirname
+      // which is not available in Edge Runtime. Replace with false so the
+      // edge bundle uses the native WebSocket API instead.
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        ws: false,
+        'bufferutil': false,
+        'utf-8-validate': false,
+      }
+    }
+    return config
+  },
 }
 
 export default nextConfig
