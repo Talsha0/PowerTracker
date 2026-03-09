@@ -58,13 +58,17 @@ export async function getUserById(
   userId: string,
   authUser?: { email?: string; user_metadata?: Record<string, unknown> }
 ): Promise<User | null> {
-  const { data } = await supabase()
+  const { data, error } = await supabase()
     .from('users')
     .select('*')
     .eq('id', userId)
     .single()
 
   if (data) return data
+
+  // PGRST116 = "no rows found" — the user row just doesn't exist yet, try to create it.
+  // Any other error (network, RLS, timeout) — throw so the caller can fall back to cache.
+  if (error && error.code !== 'PGRST116') throw error
 
   // Row missing — create it using authUser data if available, otherwise re-fetch
   let resolvedEmail = authUser?.email

@@ -28,7 +28,21 @@ export function useAuth() {
         if (!hasCachedUser) setLoading(true)
         try {
           const currentUser = await getUserById(session.user.id, session.user as any)
-          setUser(currentUser)
+          if (currentUser) {
+            setUser(currentUser)
+          } else if (!hasCachedUser) {
+            // DB returned null (slow/unreachable) but auth session is valid —
+            // construct a minimal user so queries aren't disabled
+            const su = session.user
+            setUser({
+              id: su.id,
+              email: su.email ?? '',
+              username: (su.user_metadata?.username as string | undefined) ?? su.email?.split('@')[0] ?? 'user',
+              avatar_url: null,
+              created_at: su.created_at ?? new Date().toISOString(),
+            })
+          }
+          // If hasCachedUser && currentUser is null: keep the cached user
         } catch {
           // Keep the cached user on error — don't wipe it
         } finally {
