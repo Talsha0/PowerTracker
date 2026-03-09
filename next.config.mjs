@@ -19,8 +19,10 @@ const nextConfig = {
       ],
     },
   ],
-  // canvas is a dev-only script tool — never bundle it in production
-  serverExternalPackages: ['canvas'],
+  experimental: {
+    // canvas is dev-only (icon generation script) — never bundle in production
+    serverComponentsExternalPackages: ['canvas'],
+  },
 }
 
 export default nextConfig
