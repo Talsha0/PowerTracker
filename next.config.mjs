@@ -1,5 +1,19 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  webpack: (config, { nextRuntime, webpack }) => {
+    // Polyfill __dirname / __filename for Edge Runtime bundles.
+    // Some transitive deps reference these globals; replacing them with safe
+    // string literals prevents ReferenceError at runtime on Vercel Edge.
+    if (nextRuntime === 'edge') {
+      config.plugins.push(
+        new webpack.DefinePlugin({
+          __dirname: JSON.stringify('/'),
+          __filename: JSON.stringify('/'),
+        })
+      )
+    }
+    return config
+  },
   images: {
     remotePatterns: [
       {
