@@ -3,6 +3,7 @@ export type WorkoutVisibility = 'private' | 'friends'
 export type FriendshipStatus = 'pending' | 'accepted' | 'rejected'
 export type IntensityLevel = 1 | 2 | 3 | 4 | 5
 
+ 
 export type GymCategory =
   | 'legs'
   | 'chest_back'
