@@ -124,7 +124,7 @@ After deployment, add your Vercel URL to Supabase Auth redirect URLs.
 
 ### iPhone (Safari):
 1. Open the app URL in Safari
-2. Tap the **Share** button (rectangle with arrow up)
+2. Tap the **Share** button (rectangle with arrow up)__dirname
 3. Scroll down and tap **"Add to Home Screen"**
 4. Tap **Add** — the app icon appears on your home screen
 
