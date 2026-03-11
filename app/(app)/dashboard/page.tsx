@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Trophy, Calendar } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
@@ -19,6 +20,12 @@ import { PageLoader } from '@/components/ui/LoadingSpinner'
 export default function DashboardPage() {
   const { user, isLoading } = useAuth()
   const { weeklyGoals } = useAuthStore()
+  const [greeting, setGreeting] = useState('')
+
+  useEffect(() => {
+    const h = new Date().getHours()
+    setGreeting(h < 12 ? 'בוקר טוב' : h < 17 ? 'צהריים טובים' : 'ערב טוב')
+  }, [])
 
   const { data: analytics, isLoading: workoutsLoading, error: analyticsError } = useQuery({
     queryKey: ['analytics', user?.id],
@@ -40,9 +47,6 @@ export default function DashboardPage() {
     </div>
   )
 
-  const greeting = new Date().getHours() < 12 ? 'בוקר טוב' :
-    new Date().getHours() < 17 ? 'צהריים טובים' : 'ערב טוב'
-
   const weeklyWorkoutProgress = weeklyGoals.workoutsPerWeek
     ? Math.min(100, ((analytics?.weeklyWorkouts ?? 0) / weeklyGoals.workoutsPerWeek) * 100)
     : null
@@ -55,8 +59,8 @@ export default function DashboardPage() {
           <Calendar className="w-5 h-5 text-gray-400" />
         </Link>
         <div className="text-right">
-          <p className="text-gray-400 text-sm">{greeting},</p>
-          <h2 className="text-xl font-bold text-white">{user?.username}</h2>
+          <p className="text-gray-400 text-sm" suppressHydrationWarning>{greeting},</p>
+          <h2 className="text-xl font-bold text-white" suppressHydrationWarning>{user?.username}</h2>
         </div>
       </div>
 
